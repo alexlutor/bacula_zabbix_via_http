@@ -13,8 +13,8 @@ http://192.168.1.18:9096/web/security/
 Не использовать галочку "Создать выделенный файл конфигурации Bconsol:"
 
 Используйте в макросах username и password созданные ранее.
-'{$PASS}'
-'{$USERNAME}'
+'{$USERNAME}' '{$PASS}'
+
 
           
 ## ENG
@@ -28,6 +28,5 @@ http://192.168.1.18:9096/web/security/
 Do not use the checkbox “Create a dedicated Bconsol configuration file:”
 
 Use in macros username and password created earlier.
-'{$PASS}'
-'{$USERNAME}'
+'{$USERNAME}' '{$PASS}'
 
