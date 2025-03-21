@@ -30,5 +30,5 @@ Do not use the checkbox “Create a dedicated Bconsol configuration file:”
 Use in macros username and password created earlier.
 '{$USERNAME}' '{$PASS}'
 
-![alt text](zabbix_user_add.jpg)
-![alt text](zabbix_status.jpg)
+![add user](zabbix_user_add.jpg)
+![status](zabbix_status.jpg)
