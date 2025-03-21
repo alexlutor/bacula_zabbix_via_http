@@ -9,6 +9,7 @@ https://bacula.org/downloads/baculum/baculum-api
 
 Заведите пользователя в "Базовые пользователи API"
 http://192.168.1.18:9096/web/security/
+
 Не использовать галочку "Создать выделенный файл конфигурации Bconsol:"
 
 Используйте в макросах username и password созданные ранее.
