@@ -13,11 +13,9 @@ http://192.168.1.18:9096/web/security/
 Не использовать галочку "Создать выделенный файл конфигурации Bconsol:"
 
 Используйте в макросах username и password созданные ранее.
-      macros:
-        - macro: '{$PASS}'
-          value: zabbix_password
-        - macro: '{$USERNAME}'
-          value: zabbix_user
+'{$PASS}'
+'{$USERNAME}'
+
           
 ## ENG
 The api from this documentation is used:
@@ -30,9 +28,6 @@ http://192.168.1.18:9096/web/security/
 Do not use the checkbox “Create a dedicated Bconsol configuration file:”
 
 Use in macros username and password created earlier.
-      macros:
-        - macro: '{$PASS}'
-          value: zabbix_password
-        - macro: '{$USERNAME}'
-          value: zabbix_user
+'{$PASS}'
+'{$USERNAME}'
 
