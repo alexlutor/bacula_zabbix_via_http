@@ -26,6 +26,7 @@ standard port 9096 is used
 
 Start a user in “API Basic Users”
 http://192.168.1.18:9096/web/security/
+
 Do not use the checkbox “Create a dedicated Bconsol configuration file:”
 
 Use in macros username and password created earlier.
