@@ -1,0 +1,516 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: eaf9f6f39b3d4c219862d60576545e3a
+      name: 'Templates Users'
+  templates:
+    - uuid: c9d59316bc124e32865dda60d143c707
+      template: baculum
+      name: baculum
+      description: |
+        Template for Bacula / Baculum  Web API monitoring
+        
+        use api from 
+        https://bacula.org/downloads/baculum/baculum-api
+      groups:
+        - name: 'Templates Users'
+      items:
+        - uuid: a6437d272f764d859caad99646bf0ae3
+          name: RAW
+          type: HTTP_AGENT
+          key: RAW
+          delay: 1h
+          history: '0'
+          value_type: TEXT
+          trends: '0'
+          authtype: BASIC
+          username: '{$USERNAME}'
+          password: '{$PASS}'
+          preprocessing:
+            - type: STR_REPLACE
+              parameters:
+                - output
+                - data
+          timeout: 3s
+          url: 'http://{HOST.HOST}:9096/api/v2/clients'
+      discovery_rules:
+        - uuid: c5e912d25e464dc68a50e97e6845faa4
+          name: 'Baculum Discovery Hosts with HTTP API'
+          type: HTTP_AGENT
+          key: rawclient
+          delay: 1h
+          authtype: BASIC
+          username: '{$USERNAME}'
+          password: '{$PASS}'
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          item_prototypes:
+            - uuid: d33855e9203e496c8f637bd6af841b2d
+              name: 'Client status {#CLIENTNAME}'
+              type: HTTP_AGENT
+              key: 'showclient[{#CLIENTNAME}]'
+              delay: 1h
+              history: 1d
+              authtype: BASIC
+              username: '{$USERNAME}'
+              password: '{$PASS}'
+              description: 'Get status client "Enabled" or "Disabled"'
+              valuemap:
+                name: ClientStatusRUS
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.[''output''].[''enabled'']'
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - '43200'
+              timeout: 3s
+              url: 'http://{HOST.HOST}:9096/api/v2/clients/{#CLIENTID}/show?output=json'
+              tags:
+                - tag: Application
+                  value: Baculum
+              trigger_prototypes:
+                - uuid: 62119fff6149490c9cd0772e758b86d8
+                  expression: 'last(/baculum/showclient[{#CLIENTNAME}],#3)=0'
+                  name: 'Client {#CLIENTNAME} is Disabled'
+                  url: 'http://{HOST.HOST}/web/client/{#CLIENTID}/'
+                  priority: HIGH
+                  description: 'Client {#CLIENTNAME} is Disabled on {HOST.HOST}'
+                  manual_close: 'YES'
+                  tags:
+                    - tag: Application
+                      value: Baculum
+          timeout: 3s
+          url: 'http://{HOST.HOST}:9096/api/v2/clients'
+          lld_macro_paths:
+            - lld_macro: '{#CLIENTID}'
+              path: '$.[''clientid'']'
+            - lld_macro: '{#CLIENTNAME}'
+              path: '$.[''name'']'
+          preprocessing:
+            - type: STR_REPLACE
+              parameters:
+                - output
+                - data
+        - uuid: 77ed8c29fad54bf281f8305c0f77b758
+          name: 'Baculum Discovery Director with HTTP API'
+          type: HTTP_AGENT
+          key: rawdirector
+          delay: 1h
+          authtype: BASIC
+          username: '{$USERNAME}'
+          password: '{$PASS}'
+          description: 'Get Directors'
+          item_prototypes:
+            - uuid: 9db29ab36080435fa0c75c0400e78214
+              name: 'Number of completed jobs {#DIRECTORNAME}'
+              type: DEPENDENT
+              key: 'DIRCTOR.JOBSCOMP[{#DIRECTORNAME}]'
+              delay: '0'
+              description: 'Number of completed jobs after service startup'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.[''output''].[''jobs_run'']'
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - '3600'
+              master_item:
+                key: 'DIRECTOR.HEADER[{#DIRECTORNAME}]'
+              tags:
+                - tag: Application
+                  value: Baculum
+            - uuid: 38a2e610f7f9426a8a4d0d2e8d32bece
+              name: 'Number of runnig jobs {#DIRECTORNAME}'
+              type: DEPENDENT
+              key: 'DIRCTOR.JOBSRUN[{#DIRECTORNAME}]'
+              delay: '0'
+              description: 'Number of running jobs'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.[''output''].[''jobs_running'']'
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - '3600'
+              master_item:
+                key: 'DIRECTOR.HEADER[{#DIRECTORNAME}]'
+              tags:
+                - tag: Application
+                  value: Baculum
+            - uuid: bca146b7b5ab406cbe28a268b86f0596
+              name: 'Director {#DIRECTORNAME} reloaded time'
+              type: DEPENDENT
+              key: 'DIRCTOR.RELOADED[{#DIRECTORNAME}]'
+              delay: '0'
+              units: unixtime
+              description: 'Reloaded time service "bacula-dir"'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.[''output''].[''reloaded_epoch'']'
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - '3600'
+              master_item:
+                key: 'DIRECTOR.HEADER[{#DIRECTORNAME}]'
+              tags:
+                - tag: Application
+                  value: Baculum
+            - uuid: faf622ff42bd4489962628bf828b4125
+              name: 'Director {#DIRECTORNAME} startet time'
+              type: DEPENDENT
+              key: 'DIRCTOR.STARTED[{#DIRECTORNAME}]'
+              delay: '0'
+              units: unixtime
+              description: 'Startet time service "bacula-dir"'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.[''output''].[''started_epoch'']'
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - '3600'
+              master_item:
+                key: 'DIRECTOR.HEADER[{#DIRECTORNAME}]'
+              tags:
+                - tag: Application
+                  value: Baculum
+            - uuid: 5015493bbb624785b57e8a063a0fea5f
+              name: '{#DIRECTORNAME} HEADER  RAW'
+              type: HTTP_AGENT
+              key: 'DIRECTOR.HEADER[{#DIRECTORNAME}]'
+              delay: 10m
+              history: 1h
+              value_type: TEXT
+              trends: '0'
+              authtype: BASIC
+              username: '{$USERNAME}'
+              password: '{$PASS}'
+              timeout: 60s
+              url: 'http://{HOST.HOST}:9096/api/v2/directors/{#DIRECTORNAME}/status?output=json&type=header'
+              tags:
+                - tag: Application
+                  value: Baculum
+          timeout: 40s
+          url: 'http://{HOST.HOST}:9096/api/v2/directors'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |2
+                    var input = JSON.parse(value);
+                    // Создаем массив для результата
+                    var data = [];
+                    // Проходим по каждому элементу массива output
+                    for (var i = 0; i < input.output.length; i++) {
+                      var dir = input.output[i];
+                      data.push({ "{#DIRECTORNAME}": dir });
+                    }
+                  
+                    // Создаем результирующий объект
+                    var result = {
+                      data: data
+                    };
+                  
+                    // Преобразуем результат обратно в строку
+                    return JSON.stringify(result, null, 2);
+        - uuid: cce78ba7a2ac4a768a8366d30f5cdeb7
+          name: 'Baculum Discovery Jobs with HTTP API'
+          type: HTTP_AGENT
+          key: rawjobs
+          delay: 1h
+          authtype: BASIC
+          username: '{$USERNAME}'
+          password: '{$PASS}'
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          item_prototypes:
+            - uuid: 813c10c9ce53462f8041877484fb8857
+              name: 'Job bytes {#JOBNAME}'
+              type: DEPENDENT
+              key: 'jobbytes[{#JOBNAME}]'
+              delay: '0'
+              history: 90d
+              units: b
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.jobbytes
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - '43200'
+              master_item:
+                key: 'jobraw[{#JOBNAME}]'
+              tags:
+                - tag: Application
+                  value: Baculum
+            - uuid: 02479431fcd249e19991b6198c2309f9
+              name: 'Job config raw {#JOBNAME}'
+              type: HTTP_AGENT
+              key: 'jobconfig[{#JOBNAME}]'
+              delay: 1h
+              history: '0'
+              value_type: TEXT
+              trends: '0'
+              authtype: BASIC
+              username: '{$USERNAME}'
+              password: '{$PASS}'
+              timeout: 3s
+              url: 'http://{HOST.HOST}:9096/api/v2/jobs/show?name={#JOBNAME}&output=json'
+              tags:
+                - tag: Application
+                  value: Baculum
+            - uuid: f39f50318bee48a2b8753da00f101120
+              name: 'Job enaled status {#JOBNAME}'
+              type: DEPENDENT
+              key: 'jobenabledstatus[{#JOBNAME}]'
+              delay: '0'
+              history: 90d
+              description: |
+                This is status job. values "1" -  Enabled,  "0" - disabled.
+                "1000" -  Resurce Not found (default error code server API)
+              valuemap:
+                name: 'Job Enabled Status'
+              preprocessing:
+                - type: NOT_MATCHES_REGEX
+                  parameters:
+                    - '"error":1000}$'
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '1000'
+                - type: JSONPATH
+                  parameters:
+                    - $.output.enabled
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '1000'
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - '43200'
+              master_item:
+                key: 'jobconfig[{#JOBNAME}]'
+              tags:
+                - tag: Application
+                  value: Baculum
+              trigger_prototypes:
+                - uuid: bc0b266252bd47f797c5d217bf8208c6
+                  expression: 'last(/baculum/jobenabledstatus[{#JOBNAME}],#3)=0'
+                  name: 'Job {#JOBNAME} is Disabled'
+                  url: 'http://{HOST.HOST}/web/job/{#JOBNAME}'
+                  priority: AVERAGE
+                  description: 'Please check job. Set Enable or Remove job'
+                  manual_close: 'YES'
+            - uuid: cc15526c4aa74512a757c6d72cb16f52
+              name: 'Job endtime {#JOBNAME}'
+              type: DEPENDENT
+              key: 'jobendtime[{#JOBNAME}]'
+              delay: '0'
+              history: 90d
+              units: unixtime
+              description: 'End job date format Unixtime'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.jobtdate
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - '43200'
+              master_item:
+                key: 'jobraw[{#JOBNAME}]'
+              tags:
+                - tag: Application
+                  value: Baculum
+            - uuid: 3d72f0318ccf426d808d5e365feefd18
+              name: 'Job status raw {#JOBNAME}'
+              type: HTTP_AGENT
+              key: 'jobraw[{#JOBNAME}]'
+              delay: 1h
+              history: '0'
+              value_type: TEXT
+              trends: '0'
+              authtype: BASIC
+              username: '{$USERNAME}'
+              password: '{$PASS}'
+              preprocessing:
+                - type: STR_REPLACE
+                  parameters:
+                    - '{"output":['
+                    - ''
+                - type: STR_REPLACE
+                  parameters:
+                    - '],"error":0}'
+                    - ''
+              timeout: 3s
+              url: 'http://{HOST.HOST}:9096/api/v2/jobs?name={#JOBNAME}&level=F&limit=1'
+              tags:
+                - tag: Application
+                  value: Baculum
+            - uuid: 449ae40263e84de1aa2d0776c4540864
+              name: 'Job starttime {#JOBNAME}'
+              type: DEPENDENT
+              key: 'jobstarttime[{#JOBNAME}]'
+              delay: '0'
+              history: 90d
+              units: unixtime
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.starttime
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      const date = new Date(value);
+                      const timestampSeconds = Math.floor(date.getTime() / 1000) - 18000;
+                      return(timestampSeconds)
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - '43200'
+              master_item:
+                key: 'jobraw[{#JOBNAME}]'
+              tags:
+                - tag: Application
+                  value: Baculum
+            - uuid: aae5c64a3ae84590bd89f0cecccfdf7d
+              name: 'Job status {#JOBNAME}'
+              type: DEPENDENT
+              key: 'jobstatus[{#JOBNAME}]'
+              delay: '0'
+              history: 90d
+              value_type: CHAR
+              trends: '0'
+              valuemap:
+                name: 'Job status code RUS'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.jobstatus
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - '43200'
+              master_item:
+                key: 'jobraw[{#JOBNAME}]'
+              tags:
+                - tag: Application
+                  value: Baculum
+              trigger_prototypes:
+                - uuid: a7151399fd8849489be5c808ac54a12a
+                  expression: 'last(/baculum/jobstatus[{#JOBNAME}])<>"T"'
+                  name: 'Bacula Job {#JOBNAME} Failed'
+                  priority: HIGH
+                  description: 'bacula jobs is failed'
+                  manual_close: 'YES'
+                  dependencies:
+                    - name: 'Bacula Job {#JOBNAME} Running'
+                      expression: 'find(/baculum/jobstatus[{#JOBNAME}],,"regexp","(C|D|R|S)")=1'
+                  tags:
+                    - tag: Application
+                      value: Baculum
+                - uuid: ee35ec0c9e7e4fbfacdfb31b3ed060c0
+                  expression: 'find(/baculum/jobstatus[{#JOBNAME}],,"regexp","(C|D|R|S)")=1'
+                  name: 'Bacula Job {#JOBNAME} Running'
+                  priority: INFO
+                  description: 'bacula jobs is running'
+                  tags:
+                    - tag: Application
+                      value: Baculum
+                - uuid: fa048fde4f6b41e3ae967755bfedb9cc
+                  expression: 'nodata(/baculum/jobstatus[{#JOBNAME}],24h)=1'
+                  name: 'Bacula Job {#JOBNAME} Status Not Received More 24 Hours'
+                  priority: AVERAGE
+                  description: 'Bacula jobs status no data 24 hours.'
+                  manual_close: 'YES'
+                  dependencies:
+                    - name: 'Не доступен по протоколу ICMP ping'
+                      expression: 'max(/Template Module ICMP Ping/icmpping,#3)=0'
+                  tags:
+                    - tag: Application
+                      value: Baculum
+          timeout: 5s
+          url: 'http://{HOST.HOST}:9096/api/v2/jobs/resnames'
+          preprocessing:
+            - type: REGEX
+              parameters:
+                - '.*(\[.*\]).*'
+                - \1
+            - type: STR_REPLACE
+              parameters:
+                - '['
+                - ''
+            - type: STR_REPLACE
+              parameters:
+                - ']'
+                - ''
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var x = '';
+                  var c = '';
+                  value=value.split(',')
+                  var a=value.length;
+                      for(i in value)
+                    {
+                       x += c + '{ "{#JOBNAME}" : ' + value[i] + ' }';
+                      c = ', ';
+                    }
+                    
+                    
+                  
+                  
+                  
+                  
+                  
+                   return '{ "data" : [  '+ x +'  ] }';
+      macros:
+        - macro: '{$PASS}'
+          value: zabbix_password
+        - macro: '{$USERNAME}'
+          value: zabbix_user
+      valuemaps:
+        - uuid: 7aa90afbea164695a0e7ede20cfa4476
+          name: ClientStatusENG
+          mappings:
+            - value: '1'
+              newvalue: Enabled
+            - value: '0'
+              newvalue: Disabled
+        - uuid: 58b4fbb4c38a4ef0a94464f4fb497bc3
+          name: ClientStatusRUS
+          mappings:
+            - value: '1'
+              newvalue: Включен
+            - value: '0'
+              newvalue: Отключен
+        - uuid: 337ad6ebc0fd4969b8558f292909c4bb
+          name: 'Job Enabled Status'
+          mappings:
+            - value: '1'
+              newvalue: Enabled
+            - value: '0'
+              newvalue: Disabled
+            - value: '1000'
+              newvalue: 'Error request'
+        - uuid: c0ef374c55444ba4a7f31cbb0d914e62
+          name: 'Job status code RUS'
+          mappings:
+            - value: A
+              newvalue: 'Отменено пользователем'
+            - value: B
+              newvalue: Заблокировано
+            - value: C
+              newvalue: 'Создано, но еще не запущено'
+            - value: D
+              newvalue: 'Проверка различий'
+            - value: E
+              newvalue: 'Завершено с ошибкой'
+            - value: F
+              newvalue: 'Ожидает File daemon'
+            - value: I
+              newvalue: 'Невыполненное задание'
+            - value: L
+              newvalue: 'Фиксация данных (последний депул)'
+            - value: М
+              newvalue: 'Ожидает монтирования'
+            - value: R
+              newvalue: Запущено
+            - value: S
+              newvalue: 'Ожидает Storage daemon'
+            - value: T
+              newvalue: 'Завершено нормально'
