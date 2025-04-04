@@ -1,6 +1,7 @@
 # bacula_zabbix_via_http
-Monitoring Bacula( baculum via http)
+Monitoring Bacula from Zabbix ( baculum via http)
 Template for Bacula / Baculum  Web API monitoring
+
 
 ## RU
 Используется api из этой документации:
